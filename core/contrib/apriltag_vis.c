@@ -169,11 +169,10 @@ void apriltag_vis_detection(const apriltag_detection_t* detection,
 void apriltag_vis_detections(zarray_t* detections,
                              image_u8_t* image) {
 
-  for (int i = 0; i < zarray_size(detections); i++) {
+  for (size_t i = 0; i < zarray_size(detections); i++) {
     apriltag_detection_t *det;
     zarray_get(detections, i, &det);
     apriltag_vis_detection(det, image);
   }
-  
-  
+
 }

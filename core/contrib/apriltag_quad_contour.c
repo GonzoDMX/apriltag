@@ -138,7 +138,7 @@ float furthest_point(const zarray_t* points,
   float max_r2 = -1;
 
   // get furthest from centroid
-  for (int i=0; i<zarray_size(points); ++i) {
+  for (size_t i=0; i < zarray_size(points); ++i) {
 
     const contour_point_t* pi;
     zarray_get_volatile(points, i, &pi);
@@ -169,25 +169,23 @@ float furthest_along(const zarray_t* points,
                      float p[2],
                      int* idx) {
 
-  float max_d = -1;
+    float max_d = -1;
 
-  // get furthest from centroid
-  for (int i=0; i<zarray_size(points); ++i) {
-    const contour_point_t* pi;
-    zarray_get_volatile(points, i, &pi);
-    float xi = pi->x;
-    float yi = pi->y;
-    float di = q[0]*xi + q[1]*yi;
-    if (i==0 || di > max_d) {
-      max_d = di;
-      p[0] = xi;
-      p[1] = yi;
-      *idx = i;
+    // get furthest from centroid
+    for (int i=0; i < (int)zarray_size(points); ++i) {
+        const contour_point_t* pi;
+        zarray_get_volatile(points, i, &pi);
+        float xi = pi->x;
+        float yi = pi->y;
+        float di = q[0]*xi + q[1]*yi;
+        if (i==0 || di > max_d) {
+            max_d = di;
+            p[0] = xi;
+            p[1] = yi;
+            *idx = i;
+        }
     }
-  }
-
-  return max_d;
-
+    return max_d;
 }
 
 void quad_from_points(const zarray_t* points,
@@ -265,9 +263,7 @@ float segment_dist2(const float a[2],
   */
 
   return ux*ux + uy*uy;
-
 }
-                    
 
 float get_max_quad_dist(const zarray_t* points,
                         const float sides[4][2],
@@ -276,11 +272,11 @@ float get_max_quad_dist(const zarray_t* points,
   float d2max = 0.0;
 
   // get max over all points
-  for (int i=0; i<zarray_size(points); ++i) {
+  for (size_t i=0; i < zarray_size(points); ++i) {
 
     const contour_point_t* cp;
     zarray_get_volatile(points, i, &cp);
-    
+
     const float p[2] = { cp->x, cp->y };
 
     float d2min = FLT_MAX;
@@ -291,12 +287,11 @@ float get_max_quad_dist(const zarray_t* points,
       if (d2 < d2min) { d2min = d2; }
     }
 
-    if (d2min > d2max) { d2max = d2min; }
-    
+    if (d2min > d2max) {
+        d2max = d2min;
+    }
   }
-
   return sqrt(d2max);
-  
 }
 
 void xyw_accum(xyw_moments_t* m,
@@ -322,43 +317,39 @@ double sample_gradient_xyw(const image_u8_t* im,
                            int count,
                            xyw_moments_t* moments) {
 
-  int n = zarray_size(points);
+    int n = (int)zarray_size(points);
 
-  const int up = -im->stride;
-  const int dn =  im->stride;
-  const int lt = -1;
-  const int rt =  1;
+    const int up = -im->stride;
+    const int dn =  im->stride;
+    const int lt = -1;
+    const int rt =  1;
 
-  double isum = 0.0;
-  double wsum = 0.0;
+    double isum = 0.0;
+    double wsum = 0.0;
 
-  for (int k=0; k<count; ++k) {
+    for (int k=0; k<count; ++k) {
+        int i = (start+k)%n;
 
-    int i = (start+k)%n;
+        const contour_point_t* p;
+        zarray_get_volatile(points, i, &p);
 
-    const contour_point_t* p;
-    zarray_get_volatile(points, i, &p);
+        if (p->x && p->y && p->x + 1 < (uint32_t)im->width && p->y + 1 < (uint32_t)im->height) {
 
-    if (p->x && p->y && p->x + 1 < (uint32_t)im->width && p->y + 1 < (uint32_t)im->height) {
+            int offs = p->x + im->stride*p->y;
 
-      int offs = p->x + im->stride*p->y;
-    
-      double gx = im->buf[offs+rt] - im->buf[offs+lt];
-      double gy = im->buf[offs+dn] - im->buf[offs+up];
+            double gx = im->buf[offs+rt] - im->buf[offs+lt];
+            double gy = im->buf[offs+dn] - im->buf[offs+up];
 
-      double w = sqrt(gx*gx + gy*gy);
+            double w = sqrt(gx*gx + gy*gy);
 
-      isum += im->buf[offs]*w;
-      wsum += w;
+            isum += im->buf[offs]*w;
+            wsum += w;
 
-      xyw_accum(moments, p->x, p->y, w);
+            xyw_accum(moments, p->x, p->y, w);
 
+        }
     }
-    
-  }
-
-  return isum / wsum;
-  
+    return isum / wsum;
 }
 
 static inline float turn(const float p[2],
@@ -386,38 +377,36 @@ void apriltag_quad_contour_defaults(struct apriltag_quad_contour_params* qcp) {
 void draw_contour(image_u32_t* display,
                   const zarray_t* points,
                   uint32_t color) {
-  
-  for (int i=0; i<zarray_size(points); ++i) {
-    const contour_point_t* p;
-    zarray_get_volatile(points, i, &p);
-    display->buf[p->x + display->stride*p->y] = color;
-  }
-  
+
+    for (size_t i=0; i < zarray_size(points); ++i) {
+        const contour_point_t* p;
+        zarray_get_volatile(points, i, &p);
+        display->buf[p->x + display->stride*p->y] = color;
+    }
 }
 
 image_u32_t* im8_to_im32_dim(const image_u8_t* im,
                              double scl) {
 
-  scl = scl < 0 ? 0 : scl > 1 ? 1 : scl;
+    scl = scl < 0 ? 0 : scl > 1 ? 1 : scl;
 
-  uint32_t frac = 256*scl;
+    uint32_t frac = 256*scl;
 
-  image_u32_t* dst = image_u32_create(im->width, im->height);
+    image_u32_t* dst = image_u32_create(im->width, im->height);
 
-  const uint8_t* srcrow = im->buf;
-  uint32_t* dstrow = dst->buf;
+    const uint8_t* srcrow = im->buf;
+    uint32_t* dstrow = dst->buf;
 
-  for (int y=0; y<im->height; ++y) {
-    for (int x=0; x<im->width; ++x) {
-      uint32_t ival = ((uint32_t)srcrow[x] * frac) >> 8;
-      dstrow[x] = (ival << 24) | (ival << 16) | (ival << 8) | (ival);
+    for (int y=0; y < im->height; ++y) {
+        for (int x=0; x < im->width; ++x) {
+            uint32_t ival = ((uint32_t)srcrow[x] * frac) >> 8;
+            dstrow[x] = (ival << 24) | (ival << 16) | (ival << 8) | (ival);
+        }
+        srcrow += im->stride;
+        dstrow += dst->stride;
     }
-    srcrow += im->stride;
-    dstrow += dst->stride;
-  }
 
-  return dst;
-
+    return dst;
 }
 
 static inline int lines_from_corners_fast(const struct quad* q,
@@ -453,52 +442,48 @@ static inline int lines_from_corners_contour(const apriltag_detector_t* td,
                                              const int idx[4],
                                              g2d_line_t lines[4]) {
 
-  int n = zarray_size(ci->points);
+    int n = (int)zarray_size(ci->points);
 
-  // do line fit along border and outer border.
-  for (int i=0; i<4; ++i) {
-        
-    int j = (i+3)&3;
-    int start = idx[i];
-    int count = (idx[j]-idx[i]+n+1)%n;
+    // do line fit along border and outer border.
+    for (int i=0; i<4; ++i) {
 
-    if (count < 8) { // not sure why below assert was here, added safety code?
-      fprintf(stderr, "%s:%d: warning: count < 8 :(\n",
-              __FILE__, __LINE__);
-      return 0;
+        int j = (i+3)&3;
+        int start = idx[i];
+        int count = (idx[j]-idx[i]+n+1)%n;
+
+        if (count < 8) { // not sure why below assert was here, added safety code?
+            fprintf(stderr, "%s:%d: warning: count < 8 :(\n", __FILE__, __LINE__);
+            return 0;
+        }
+
+        assert( count >= 8 );
+
+        int corner_skip = count * td->qcp.corner_skip_scl + td->qcp.corner_skip_bias;
+        corner_skip = corner_skip > count/4 ? count/4 : corner_skip;
+            
+        start = (start + corner_skip) % n;
+        count -= 2*corner_skip;
+
+        xyw_moments_t moments;
+        memset(&moments, 0, sizeof(moments));
+
+        zarray_t* outer = contour_outer_boundary(ci, start, count);
+
+        double mean_outer, mean_inner;
+        mean_inner = sample_gradient_xyw(im, ci->points, start, count, &moments);
+        mean_outer = sample_gradient_xyw(im, outer, 0, zarray_size(outer), &moments);
+
+        zarray_destroy(outer);
+
+        if ((mean_outer - mean_inner) < td->qcp.contour_margin) {
+            return 0;
+        } else if (!moments.n) {
+            return 0;
+        } else {
+            line_init_from_xyw(&moments, lines+i);
+        }
     }
-        
-    assert( count >= 8 );
-
-    int corner_skip = count * td->qcp.corner_skip_scl + td->qcp.corner_skip_bias;
-    corner_skip = corner_skip > count/4 ? count/4 : corner_skip;
-        
-    start = (start + corner_skip) % n;
-    count -= 2*corner_skip;
-
-    xyw_moments_t moments;
-    memset(&moments, 0, sizeof(moments));
-
-    zarray_t* outer = contour_outer_boundary(ci, start, count);
-
-    double mean_outer, mean_inner;
-    mean_inner = sample_gradient_xyw(im, ci->points, start, count, &moments);
-    mean_outer = sample_gradient_xyw(im, outer, 0, zarray_size(outer), &moments);
-
-    zarray_destroy(outer);
-
-    if ((mean_outer - mean_inner) < td->qcp.contour_margin) {
-      return 0;
-    } else if (!moments.n) {
-      return 0;
-    } else {
-      line_init_from_xyw(&moments, lines+i);
-    }
-        
-  }
-
-  return 1;
-
+    return 1;
 }
 
 /* The workhorse of the quad detection: takes an individual contour and
@@ -508,216 +493,211 @@ static inline int quad_from_contour(const apriltag_detector_t* td,
                                     const contour_info_t* ci,
                                     struct quad* q) {
 
+    /* Look at perimiter and area */
+    const int min_perimeter = 4*td->qcp.min_side_length;
+    const float min_area = td->qcp.min_side_length * td->qcp.min_side_length;
 
-  /* Look at perimiter and area */
-  const int min_perimeter = 4*td->qcp.min_side_length;
-  const float min_area = td->qcp.min_side_length * td->qcp.min_side_length;
-
-  /* Eliminate really tiny contours: if each side of the contour is 1
+    /* Eliminate really tiny contours: if each side of the contour is 1
      pixel, we can lower-bound perimiter */
-  int n = zarray_size(ci->points);
+    int n = (int)zarray_size(ci->points);
 
-  if (!ci->is_outer || n < min_perimeter) {
-    return -1;
-  }
-
-  /* Compute area and centroid. */
-  float ctr[2];
-  float area = fabs(contour_area_centroid(ci->points, ctr));
-
-  // area check
-  if (area < min_area) {
-    return 1;
-  }
-      
-  int idx[4];
-  float l, w;
-
-  q->H = 0;
-  q->Hinv = 0;
-    
-  quad_from_points(ci->points, ctr, q, idx, &l, &w);
-      
-  // diagonal aspect ratio check
-  if (w < td->qcp.min_aspect*l) {
-    return 2;
-  }
-
-  float sides[4][2];
-  float lmin, lmax;
-
-  get_quad_sides(q, sides, &lmin, &lmax);
-
-  // side aspect ratio check
-  if (lmin < td->qcp.min_aspect*lmax || lmin < td->qcp.min_side_length) {
-    return 2;
-  }
-
-  // max dist from quad check
-  float dmax = get_max_quad_dist(ci->points, sides, q);
-  if (dmax > td->qcp.point_dist_diam_scl*l+td->qcp.point_dist_bias) {
-    return 4;
-  }
-
-  int ok = 0;
-  g2d_line_t lines[4];
-
-  if (0) {
-    ok = lines_from_corners_fast(q, sides, lines);
-  } else {
-    ok = lines_from_corners_contour(td, im, ci, q, idx, lines);
-  }
-
-  if (!ok) {
-    return 5;
-  }
-
-  for (int i=0; i<4; ++i) {
-    lines[i].p[0] += 0.5;
-    lines[i].p[1] += 0.5;
-  }
-    
-  for (int i=0; i<4; ++i) {
-    int j = (i+1)&3; 
-    double p[2];
-    int result = g2d_line_intersect_line(lines+i, lines+j, p);
-    if (!result) { return 5; }
-    q->p[i][0] = p[0];
-    q->p[i][1] = p[1];
-  }
-      
-  for (int i=0; ok && i<4; ++i) {
-    int j = (i+1)&3;
-    int k = (i+2)&3;
-    float tval = turn(q->p[i], q->p[j], q->p[k]);
-    if (tval < 0) {
-      ok = 0;
-      break;
+    if (!ci->is_outer || n < min_perimeter) {
+        return -1;
     }
-  }
 
-  if (!ok) {
-    return 6;
-  }
+    /* Compute area and centroid. */
+    float ctr[2];
+    float area = fabs(contour_area_centroid(ci->points, ctr));
 
+    // area check
+    if (area < min_area) {
+        return 1;
+    }
 
-  get_quad_sides(q, sides, &lmin, &lmax);
-  if (lmin < td->qcp.min_aspect*lmax || lmin < td->qcp.min_side_length) {
-    return 7;
-  }
+    int idx[4];
+    float l, w;
 
-  return 0;
-    
+    q->H = 0;
+    q->Hinv = 0;
 
+    quad_from_points(ci->points, ctr, q, idx, &l, &w);
+
+    // diagonal aspect ratio check
+    if (w < td->qcp.min_aspect*l) {
+        return 2;
+    }
+
+    float sides[4][2];
+    float lmin, lmax;
+
+    get_quad_sides(q, sides, &lmin, &lmax);
+
+    // side aspect ratio check
+    if (lmin < td->qcp.min_aspect*lmax || lmin < td->qcp.min_side_length) {
+        return 2;
+    }
+
+    // max dist from quad check
+    float dmax = get_max_quad_dist(ci->points, sides, q);
+    if (dmax > td->qcp.point_dist_diam_scl*l+td->qcp.point_dist_bias) {
+        return 4;
+    }
+
+    int ok = 0;
+    g2d_line_t lines[4];
+
+    if (0) {
+        ok = lines_from_corners_fast(q, sides, lines);
+    } else {
+        ok = lines_from_corners_contour(td, im, ci, q, idx, lines);
+    }
+
+    if (!ok) {
+        return 5;
+    }
+
+    for (int i=0; i<4; ++i) {
+        lines[i].p[0] += 0.5;
+        lines[i].p[1] += 0.5;
+    }
+
+    for (int i=0; i<4; ++i) {
+        int j = (i+1)&3; 
+        double p[2];
+        int result = g2d_line_intersect_line(lines+i, lines+j, p);
+        if (!result) {
+            return 5;
+        }
+        q->p[i][0] = p[0];
+        q->p[i][1] = p[1];
+    }
+
+    for (int i=0; ok && i<4; ++i) {
+        int j = (i+1)&3;
+        int k = (i+2)&3;
+        float tval = turn(q->p[i], q->p[j], q->p[k]);
+        if (tval < 0) {
+            ok = 0;
+            break;
+        }
+    }
+
+    if (!ok) {
+        return 6;
+    }
+
+    get_quad_sides(q, sides, &lmin, &lmax);
+    if (lmin < td->qcp.min_aspect*lmax || lmin < td->qcp.min_side_length) {
+        return 7;
+    }
+
+    return 0;
 }
 
 typedef struct qfc_info {
-  const apriltag_detector_t* td;
-  const image_u8_t* im;
-  const contour_info_t* contours;
-  struct quad* quads;
-  int* results;
-  int count;
+    const apriltag_detector_t* td;
+    const image_u8_t* im;
+    const contour_info_t* contours;
+    struct quad* quads;
+    int* results;
+    int count;
 } qfc_info_t;
 
 /* Simple wrapper on quad_from_contour */
 static void qfc_task(void* p) {
 
-  qfc_info_t* qfc = (qfc_info_t*)p;
+    qfc_info_t* qfc = (qfc_info_t*)p;
 
-  for (int i=0; i<qfc->count; ++i) {
+    for (int i=0; i<qfc->count; ++i) {
     qfc->results[i] = quad_from_contour(qfc->td, qfc->im,
                                         qfc->contours + i,
                                         qfc->quads + i);
-  }
-  
+    }
 }
 
 zarray_t* quads_from_contours(const apriltag_detector_t* td,
-                              const image_u8_t* im,
-                              const zarray_t* contours) {
+                                const image_u8_t* im,
+                                const zarray_t* contours) {
 
-  zarray_t* quads = zarray_create(sizeof(struct quad));
+    zarray_t* quads = zarray_create(sizeof(struct quad));
 
-  image_u32_t* debug_vis = NULL;
-  
-  if (td->debug) {
-    debug_vis = im8_to_im32_dim(im, 0.5);
-  }
+    image_u32_t* debug_vis = NULL;
 
-  int nc = zarray_size(contours);
+    if (td->debug) {
+        debug_vis = im8_to_im32_dim(im, 0.5);
+    }
 
-  /* Step 3: divide list of contours into a worker pool, and tell
+    int nc = (int)zarray_size(contours);
+
+    /* Step 3: divide list of contours into a worker pool, and tell
      workers to run the qfc_task, which is just a simple wrapper on
      quad_from_contour. */
 
-  struct quad wquads[nc];
-  int results[nc];
-  const contour_info_t* ctrs = (const contour_info_t*)contours->data;
+    struct quad wquads[nc];
+    int results[nc];
+    const contour_info_t* ctrs = (const contour_info_t*)contours->data;
 
 #if 1
 
-  int chunksize = 1 + nc / (APRILTAG_TASKS_PER_THREAD_TARGET * td->nthreads);
-  //int chunksize = 1 + nc / td->nthreads;
+    int chunksize = 1 + nc / (APRILTAG_TASKS_PER_THREAD_TARGET * td->nthreads);
+    //int chunksize = 1 + nc / td->nthreads;
 
-  qfc_info_t qfcs[nc / chunksize + 1];
+    qfc_info_t qfcs[nc / chunksize + 1];
 
-  int ntasks = 0;
+    int ntasks = 0;
 
-  for (int i=0; i<nc; i+=chunksize) {
-    qfcs[ntasks].td = td;
-    qfcs[ntasks].im = im;
-    qfcs[ntasks].contours = ctrs + i;
-    qfcs[ntasks].quads = wquads + i;
-    qfcs[ntasks].results = results + i;
-    qfcs[ntasks].count = imin(nc, i+chunksize) - i;
-    workerpool_add_task(td->wp, qfc_task, qfcs+ntasks);
-    ++ntasks;
-  }
+    for (int i=0; i < nc; i+=chunksize) {
+        qfcs[ntasks].td = td;
+        qfcs[ntasks].im = im;
+        qfcs[ntasks].contours = ctrs + i;
+        qfcs[ntasks].quads = wquads + i;
+        qfcs[ntasks].results = results + i;
+        qfcs[ntasks].count = imin(nc, i+chunksize) - i;
+        workerpool_add_task(td->wp, qfc_task, qfcs+ntasks);
+        ++ntasks;
+    }
 
-  workerpool_run(td->wp);
+    workerpool_run(td->wp);
 
 #else
 
-  qfc_info_t p;
-  p.td = td;
-  p.im = im;
-  p.contours = ctrs;
-  p.quads = wquads;
-  p.results = results;
-  p.count = nc;
-  qfc_task(&p);
+    qfc_info_t p;
+    p.td = td;
+    p.im = im;
+    p.contours = ctrs;
+    p.quads = wquads;
+    p.results = results;
+    p.count = nc;
+    qfc_task(&p);
 
 #endif
-  
-  for (int c=0; c<nc; ++c) {
-    
-    if (results[c] == 0) {
-      zarray_add(quads, wquads+c);
+
+    for (int c=0; c<nc; ++c) {
+
+        if (results[c] == 0) {
+            zarray_add(quads, wquads+c);
+        }
+
+        if (td->debug && results[c] >= 0) {
+            uint32_t colors[8] = {
+                MAKE_RGB(255,   0, 255), // success = mid purple
+                MAKE_RGB(127,   0,   0), // min. area = dark red
+                MAKE_RGB(127,  63,   0), // diag. aspect = dark orange
+                MAKE_RGB(127, 127,   0), // side aspect = dark yellow
+                MAKE_RGB(  0, 127,   0), // too messy = dark green
+                MAKE_RGB(  0, 127, 127), // not enough edge contrast = dark cyan
+                MAKE_RGB(  0,   0, 127), // not CCW = dark blue
+                MAKE_RGB(  0, 191,   0), // side 2 = mid green
+            };
+            draw_contour(debug_vis, ctrs[c].points, colors[results[c] % 8]);
+        }
     }
 
-    if (td->debug && results[c] >= 0) {
-      uint32_t colors[8] = {
-        MAKE_RGB(255,   0, 255), // success = mid purple
-        MAKE_RGB(127,   0,   0), // min. area = dark red
-        MAKE_RGB(127,  63,   0), // diag. aspect = dark orange
-        MAKE_RGB(127, 127,   0), // side aspect = dark yellow
-        MAKE_RGB(  0, 127,   0), // too messy = dark green
-        MAKE_RGB(  0, 127, 127), // not enough edge contrast = dark cyan
-        MAKE_RGB(  0,   0, 127), // not CCW = dark blue
-        MAKE_RGB(  0, 191,   0), // side 2 = mid green
-      };
-      draw_contour(debug_vis, ctrs[c].points, colors[results[c] % 8]);
+    if (td->debug) {
+        image_u32_write_pnm(debug_vis, "debug_quad_contours.pnm");
     }
-    
-  }
 
-  if (td->debug) {
-    image_u32_write_pnm(debug_vis, "debug_quad_contours.pnm");
-  }
-
-  return quads;
-
+    return quads;
 }
 
 
@@ -725,50 +705,49 @@ zarray_t* quads_from_contours(const apriltag_detector_t* td,
 zarray_t* apriltag_quad_contour(apriltag_detector_t* td,
                                 image_u8_t* im) {
 
-  if (!td->quad_contours) {
-    fprintf(stderr, "quad_contours is not set in tag detector!\n");
-    assert(td->quad_contours);
-    exit(1);
-  }
+    if (!td->quad_contours) {
+        fprintf(stderr, "quad_contours is not set in tag detector!\n");
+        assert(td->quad_contours);
+        exit(1);
+    }
 
-  /* Step 1: box blur & threshold (adaptive threshold) */
-  image_u8_t* thresh = box_threshold_mt(im, 255, 1,
+    /* Step 1: box blur & threshold (adaptive threshold) */
+    image_u8_t* thresh = box_threshold_mt(im, 255, 1,
                                         td->qcp.threshold_neighborhood_size,
                                         td->qcp.threshold_value,
                                         td->wp);
 
-  if (td->debug) {
-    image_u8_write_pnm(thresh, "debug_threshold.pnm");
-  }
-
-  timeprofile_stamp(td->tp, "threshold");
-
-  /* Step 2: contour detection */
-  zarray_t* contours = contour_detect(thresh); 
-  timeprofile_stamp(td->tp, "contour");
-
-  if (td->debug) {
-    image_u32_t* display = im8_to_im32_dim(im, 0.5);
-    for (int c=0; c<zarray_size(contours); ++c) {
-      const contour_info_t* ci;
-      zarray_get_volatile(contours, c, &ci);
-      uint32_t color = color_from_hue(c*0.5773502691896257);
-      if (ci->is_outer) {
-        draw_contour(display, ci->points, color);
-      }
+    if (td->debug) {
+        image_u8_write_pnm(thresh, "debug_threshold.pnm");
     }
-    image_u32_write_pnm(display, "debug_contours.pnm");
-    image_u32_destroy(display);
-  }
 
-  /* Steps 3-N: extract quads from contours (see above). */
-  zarray_t* quads = quads_from_contours(td, im, contours);
-  timeprofile_stamp(td->tp, "quads from contours");
+    timeprofile_stamp(td->tp, "threshold");
 
-  contour_destroy(contours);
-  image_u8_destroy(thresh);
+    /* Step 2: contour detection */
+    zarray_t* contours = contour_detect(thresh); 
+    timeprofile_stamp(td->tp, "contour");
 
-  return quads;
-  
+    if (td->debug) {
+        image_u32_t* display = im8_to_im32_dim(im, 0.5);
+        for (int c=0; c < (int)zarray_size(contours); ++c) {
+            const contour_info_t* ci;
+            zarray_get_volatile(contours, c, &ci);
+            uint32_t color = color_from_hue(c*0.5773502691896257);
+            if (ci->is_outer) {
+                draw_contour(display, ci->points, color);
+            }
+        }
+        image_u32_write_pnm(display, "debug_contours.pnm");
+        image_u32_destroy(display);
+    }
+
+    /* Steps 3-N: extract quads from contours (see above). */
+    zarray_t* quads = quads_from_contours(td, im, contours);
+    timeprofile_stamp(td->tp, "quads from contours");
+
+    contour_destroy(contours);
+    image_u8_destroy(thresh);
+
+    return quads;
 }
 
