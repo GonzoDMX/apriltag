@@ -50,7 +50,7 @@ matd_t *homography_compute(zarray_t *correspondences, int flags)
     double x_cx = 0, x_cy = 0;
     double y_cx = 0, y_cy = 0;
 
-    for (int i = 0; i < zarray_size(correspondences); i++) {
+    for (size_t i = 0; i < zarray_size(correspondences); i++) {
         float *c;
         zarray_get_volatile(correspondences, i, &c);
 
@@ -60,7 +60,7 @@ matd_t *homography_compute(zarray_t *correspondences, int flags)
         y_cy += c[3];
     }
 
-    int sz = zarray_size(correspondences);
+    int sz = (int)zarray_size(correspondences);
     x_cx /= sz;
     x_cy /= sz;
     y_cx /= sz;
@@ -71,7 +71,7 @@ matd_t *homography_compute(zarray_t *correspondences, int flags)
     // doubles.
 
     matd_t *A = matd_create(9,9);
-    for (int i = 0; i < zarray_size(correspondences); i++) {
+    for (size_t i = 0; i < zarray_size(correspondences); i++) {
         float *c;
         zarray_get_volatile(correspondences, i, &c);
 

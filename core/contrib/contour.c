@@ -353,7 +353,7 @@ zarray_t* contour_detect(const image_u8_t* im8) {
           const contour_info_t* lnbd_info = NULL;
 
           assert(lnbd_idx >= 0);
-          assert(lnbd_idx < zarray_size(contours));
+          assert(lnbd_idx < (int)zarray_size(contours));
           zarray_get_volatile(contours, lnbd_idx, &lnbd_info);
 
           // if both outer or both hole, take parent from lnbd
@@ -415,7 +415,8 @@ zarray_t* contour_detect(const image_u8_t* im8) {
             // 3.3)
 
             int right_is_zero = 0;
-            uint32_t i4, j4;
+            uint32_t i4 = 0;
+            uint32_t j4 = 0;
 
             found_nonzero = conn_scan_ccw(&c, im, i3, j3, i2, j2, &i4, &j4, 
                                           &right_is_zero);
@@ -442,7 +443,7 @@ zarray_t* contour_detect(const image_u8_t* im8) {
               printf("setting i3=%d, j3=%d to %d\n", i3, j3, im->buf[offs]);
               debug_print_image(stdout, im);
 #endif
-            } 
+            }
 
             //////////////////////////////////////////////////
             // 3.5
@@ -458,16 +459,12 @@ zarray_t* contour_detect(const image_u8_t* im8) {
               i3 = i4; j3 = j4;
               // loop back to 3.3
             }
-              
           } // while following contour
-
         } // found_nonzero
         
         zarray_add(contours, &cur_info);
 
       } // is_border
-
-      // 4)
 
       ccount_t afij = abs(f_i[j]);
       if (afij > 1) {
@@ -478,28 +475,23 @@ zarray_t* contour_detect(const image_u8_t* im8) {
 #endif
         lnbd = afij;
       }
-
     } // for each col
-
   } // for each row
 
 #ifdef DO_DEBUG
-
   debug_print_image(stdout, im);
-
 #endif
 
   cimage_destroy(im);
   
   return contours;
-
 }
 
 void contour_destroy(zarray_t* contours) {
 
-  int nc = zarray_size(contours);
+  size_t nc = zarray_size(contours);
 
-  for (int i=0; i<nc; ++i) {
+  for (size_t i=0; i < nc; ++i) {
     contour_info_t* ci;
     zarray_get_volatile(contours, i, &ci);
     zarray_destroy(ci->points);
@@ -573,7 +565,7 @@ zarray_t* contour_convex_hull(const zarray_t* orig_points) {
                           sizeof(contour_point_t), 
                           compare_points);
 
-  assert(num_unique >= 0 && num_unique <= zarray_size(sorted));
+  assert(num_unique >= 0 && num_unique <= (int)zarray_size(sorted));
   zarray_truncate(sorted, num_unique);
 
   if (zarray_size(sorted) < 3) {
@@ -586,7 +578,7 @@ zarray_t* contour_convex_hull(const zarray_t* orig_points) {
 
   zarray_t* dst = zarray_create(sizeof(contour_point_t));
 
-  for (int i=0; i<zarray_size(sorted); ++i) {
+  for (size_t i=0; i < zarray_size(sorted); ++i) {
 
     const contour_point_t* pi;
     zarray_get_volatile(sorted, i, &pi);
@@ -614,9 +606,9 @@ zarray_t* contour_convex_hull(const zarray_t* orig_points) {
   //////////////////////////////////////////////////
   // now do lower hull
 
-  int tsize = zarray_size(dst);
+  size_t tsize = zarray_size(dst);
 
-  for (int i=zarray_size(sorted)-1; i>=0; --i) {
+  for (size_t i=zarray_size(sorted)-1; i >= 0; --i) {
 
     const contour_point_t* pi;
     zarray_get_volatile(sorted, i, &pi);
@@ -658,7 +650,7 @@ zarray_t* contour_convex_hull(const zarray_t* orig_points) {
 float contour_area_centroid(const zarray_t* points,
                             float centroid[2]) {
 
-  int n = zarray_size(points);
+  size_t n = zarray_size(points);
 
   float area = 0;
 
@@ -666,7 +658,7 @@ float contour_area_centroid(const zarray_t* points,
     centroid[0] = centroid[1] = 0.0;
   }
 
-  for (int p=0; p<n; ++p) {
+  for (size_t p=0; p < n; ++p) {
 
     const contour_point_t *pi, *pj;
 
@@ -725,7 +717,7 @@ static inline void outer_boundary_points(int start, int end,
 zarray_t* contour_outer_boundary(const contour_info_t* cinfo,
                                  int start, int count) {
 
-  int n = zarray_size(cinfo->points);
+  size_t n = zarray_size(cinfo->points);
   if (n < 2) {
     fprintf(stderr, "won't get outer boundary of array of size less than 2!\n");
     return NULL;
@@ -1248,7 +1240,7 @@ zarray_t* contour_line_sweep(const image_u8_t* im) {
 
 void contour_line_sweep_destroy(zarray_t* contours) {
 
-  for (int i=0; i<zarray_size(contours); ++i) {
+  for (size_t i=0; i < zarray_size(contours); ++i) {
     zarray_t* contour;
     zarray_get(contours, i, &contour);
     free(contour);          

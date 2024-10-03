@@ -71,7 +71,7 @@ void *worker_thread(void *p)
         struct task *task;
 
         pthread_mutex_lock(&wp->mutex);
-        while (wp->taskspos == zarray_size(wp->tasks)) {
+        while (wp->taskspos == (int)zarray_size(wp->tasks)) {
             wp->end_count++;
 //          printf("%"PRId64" thread %d did %d\n", utime_now(), pthread_self(), cnt);
             pthread_cond_broadcast(&wp->endcond);
@@ -167,7 +167,7 @@ void workerpool_add_task(workerpool_t *wp, void (*f)(void *p), void *p)
 
 void workerpool_run_single(workerpool_t *wp)
 {
-    for (int i = 0; i < zarray_size(wp->tasks); i++) {
+    for (size_t i = 0; i < zarray_size(wp->tasks); i++) {
         struct task *task;
         zarray_get_volatile(wp->tasks, i, &task);
         task->f(task->p);

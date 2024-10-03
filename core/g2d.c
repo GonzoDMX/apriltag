@@ -547,7 +547,7 @@ int g2d_polygon_intersects_polygon(const zarray_t *polya, const zarray_t *polyb)
     // do any of the line segments collide? If so, the answer is no.
 
     // dumb N^2 method.
-    for (int ia = 0; ia < zarray_size(polya); ia++) {
+    for (size_t ia = 0; ia < zarray_size(polya); ia++) {
         double pa0[2], pa1[2];
         zarray_get(polya, ia, pa0);
         zarray_get(polya, (ia+1)%zarray_size(polya), pa1);
@@ -555,7 +555,7 @@ int g2d_polygon_intersects_polygon(const zarray_t *polya, const zarray_t *polyb)
         g2d_line_segment_t sega;
         g2d_line_segment_init_from_points(&sega, pa0, pa1);
 
-        for (int ib = 0; ib < zarray_size(polyb); ib++) {
+        for (size_t ib = 0; ib < zarray_size(polyb); ib++) {
             double pb0[2], pb1[2];
             zarray_get(polyb, ib, pb0);
             zarray_get(polyb, (ib+1)%zarray_size(polyb), pb1);

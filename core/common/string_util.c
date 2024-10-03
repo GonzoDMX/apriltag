@@ -131,23 +131,22 @@ char *_str_concat_private(const char *first, ...)
 }
 
 // Returns the index of the first character that differs:
-int str_diff_idx(const char * a, const char * b)
+int str_diff_idx(const char *a, const char *b)
 {
     assert(a != NULL);
     assert(b != NULL);
 
-    int i = 0;
-
     size_t lena = strlen(a);
     size_t lenb = strlen(b);
-
     size_t minlen = lena < lenb ? lena : lenb;
 
-    for (; i < minlen; i++)
-        if (a[i] != b[i])
-            break;
+    for (size_t i = 0; i < minlen; i++) {
+        if (a[i] != b[i]) {
+            return i;
+        }
+    }
 
-    return i;
+    return minlen;
 }
 
 
@@ -257,7 +256,7 @@ char *str_tolowercase(char *s)
 	assert(s != NULL);
 
     size_t slen = strlen(s);
-    for (int i = 0; i < slen; i++) {
+    for (size_t i = 0; i < slen; i++) {
         if (s[i] >= 'A' && s[i] <= 'Z')
             s[i] = s[i] + 'a' - 'A';
     }
@@ -270,7 +269,7 @@ char *str_touppercase(char *s)
     assert(s != NULL);
 
     size_t slen = strlen(s);
-    for (int i = 0; i < slen; i++) {
+    for (size_t i = 0; i < slen; i++) {
         if (s[i] >= 'a' && s[i] <= 'z')
             s[i] = s[i] - ('a' - 'A');
     }
@@ -303,7 +302,7 @@ void string_buffer_append(string_buffer_t *sb, char c)
 {
     assert(sb != NULL);
 
-    if (sb->size+2 >= sb->alloc) {
+    if ( (sb->size + 2) >= (unsigned int)sb->alloc) {
         sb->alloc *= 2;
         sb->s = realloc(sb->s, sb->alloc);
     }
@@ -361,7 +360,7 @@ void string_buffer_append_string(string_buffer_t *sb, const char *str)
 
     size_t len = strlen(str);
 
-    while (sb->size+len + 1 >= sb->alloc) {
+    while ( (sb->size + len + 1) >= (unsigned int)sb->alloc ) {
         sb->alloc *= 2;
         sb->s = realloc(sb->s, sb->alloc);
     }
@@ -514,7 +513,7 @@ void string_feeder_require(string_feeder_t *sf, const char *str)
 
     size_t len = strlen(str);
 
-    for (int i = 0; i < len; i++) {
+    for (size_t i = 0; i < len; i++) {
         char c = string_feeder_next(sf);
         UNUSED(c);
         assert(c == str[i]);
@@ -603,7 +602,7 @@ char *str_replace(const char *haystack, const char *needle, const char *replacem
     size_t haystack_len = strlen(haystack);
     size_t needle_len = strlen(needle);
 
-    int pos = 0;
+    size_t pos = 0;
     while (pos < haystack_len) {
         if (needle_len > 0 && str_starts_with(&haystack[pos], needle)) {
             string_buffer_append_string(sb, replacement);
