@@ -100,15 +100,15 @@ int main(int argc, char** argv) {
     
     zarray_t *detections = apriltag_detector_detect(td, im8);
     
-    printf("detected %d tags\n", zarray_size(detections));
+    printf("detected %ld tags\n", zarray_size(detections));
 
     cv::Mat display = detectionsImage(detections, frame.size(), frame.type());
     
-    for (int i = 0; i < zarray_size(detections); i++) {
+    for (size_t i = 0; i < zarray_size(detections); i++) {
       apriltag_detection_t *det;
       zarray_get(detections, i, &det);
 
-      printf("detection %3d: id (%2dx%2d)-%-4d, hamming %d, "
+      printf("detection %3ld: id (%2dx%2d)-%-4d, hamming %d, "
              "goodness %8.3f, margin %8.3f\n",
              i, det->family->d*det->family->d, det->family->h,
              det->id, det->hamming, det->goodness, det->decision_margin);

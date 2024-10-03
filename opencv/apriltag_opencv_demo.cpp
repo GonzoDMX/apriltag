@@ -119,7 +119,7 @@ int main(int argc, char *argv[])
         printf("iter %d / %d\n", iter + 1, maxiters);
       }
 
-      for (int input = 0; input < zarray_size(inputs); input++) {
+      for (size_t input = 0; input < zarray_size(inputs); input++) {
 
         int hamm_hist[hamm_hist_max];
         memset(hamm_hist, 0, sizeof(hamm_hist));
@@ -162,7 +162,7 @@ int main(int argc, char *argv[])
         
         total_detections += zarray_size(detections);
 
-        for (int i = 0; i < zarray_size(detections); i++) {
+        for (size_t i = 0; i < zarray_size(detections); i++) {
           
           apriltag_detection_t *det;
           zarray_get(detections, i, &det);
@@ -170,7 +170,7 @@ int main(int argc, char *argv[])
           if (benchmark) {
             printf(" %d", det->id);
           } else if (!quiet) {
-            printf("detection %3d: id (%2dx%2d)-%-4d, hamming %d, "
+            printf("detection %3ld: id (%2dx%2d)-%-4d, hamming %d, "
                    "goodness %8.3f, margin %8.3f\n",
                    i, det->family->d*det->family->d, det->family->h,
                    det->id, det->hamming, det->goodness, det->decision_margin);

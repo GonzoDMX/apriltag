@@ -244,7 +244,7 @@ int getopt_parse(getopt_t *gopt, int argc, char *argv[], int showErrors)
 
         if (!strncmp(tok,"-",1) && strncmp(tok,"--",2)) {
             size_t len = strlen(tok);
-            int pos;
+            size_t pos;
             for (pos = 1; pos < len; pos++) {
                 char sopt[2];
                 sopt[0] = tok[pos];
@@ -253,9 +253,9 @@ int getopt_parse(getopt_t *gopt, int argc, char *argv[], int showErrors)
                 getopt_option_t *goo = NULL;
                 zhash_get(gopt->sopts, &sopt_ptr, &goo);
 
-                if (goo==NULL) {
+                if (goo == NULL) {
                     // is the argument a numerical literal that happens to be negative?
-                    if (pos==1 && isdigit(tok[pos])) {
+                    if (pos == 1 && isdigit(tok[pos])) {
                         zarray_add(gopt->extraargs, &tok);
                         tok = NULL;
                         break;
@@ -280,8 +280,7 @@ int getopt_parse(getopt_t *gopt, int argc, char *argv[], int showErrors)
                         char *val = NULL;
                         zarray_get(toks, i+1, &val);
                         // TODO: allow negative numerical values for short-name options ?
-                        if (val[0]=='-')
-                        {
+                        if (val[0] == '-') {
                             okay = 0;
                             if (showErrors)
                                 printf("Ran out of arguments for option block %s\n", tok);

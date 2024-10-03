@@ -82,13 +82,13 @@ int main(int argc, char** argv) {
 
     zarray_t* contours = contour_line_sweep(im);
 
-    printf("got %d contours:\n[\n", zarray_size(contours));
+    printf("got %ld contours:\n[\n", zarray_size(contours));
     
-    for (int i=0; i<zarray_size(contours); ++i) {
+    for (size_t i=0; i < zarray_size(contours); ++i) {
       zarray_t* contour;
       zarray_get(contours, i, &contour);
       printf("  [ ");
-      for (int j=0; j<zarray_size(contour); ++j) {
+      for (size_t j=0; j < zarray_size(contour); ++j) {
         const contour_point_t* pj;
         zarray_get_volatile(contour, j, &pj);
         printf("%s(%d, %d)", j ? ", " : "", (int)pj->x, (int)pj->y);
@@ -106,11 +106,11 @@ int main(int argc, char** argv) {
     
       std::vector< std::vector<cv::Point> > cv_contours(zarray_size(contours));
 
-      for (int i=0; i<zarray_size(contours); ++i) {
+      for (size_t i=0; i < zarray_size(contours); ++i) {
         zarray_t* contour;
         zarray_get(contours, i, &contour);
         cv_contours[i].resize(zarray_size(contour));
-        for (int j=0; j<zarray_size(contour); ++j) {
+        for (size_t j=0; j < zarray_size(contour); ++j) {
           const contour_point_t* pj;
           zarray_get_volatile(contour, j, &pj);
           cv_contours[i][j] = cv::Point(pj->x, pj->y) * scl;

@@ -220,7 +220,7 @@ void get_options(int argc, char** argv, options_t* opts) {
         fprintf(stderr, "unknown tag family %s\n\n", family_str);
         fprintf(stderr, "choose one of: ");
         zarray_t* families = apriltag_family_list();
-        for (int i=0; i<zarray_size(families); ++i) {
+        for (size_t i=0; i < zarray_size(families); ++i) {
             char* str;
             zarray_get(families, i, &str);
             fprintf(stderr, "%s%s", (i == 0 ? ""  : ", "), str);
@@ -437,12 +437,12 @@ int main(int argc, char** argv) {
         zarray_t* path = pdf_path_create();
         pdf_path_rect(path, 0, 0, opts.base_px, opts.base_px);
     
-        for (int i=0; i<zarray_size(contours); ++i) {
+        for (size_t i=0; i < zarray_size(contours); ++i) {
 
             zarray_t* contour;
             zarray_get(contours, i, &contour);
 
-            for (int j=0; j<zarray_size(contour); ++j) {
+            for (size_t j=0; j < zarray_size(contour); ++j) {
                 
                 const contour_point_t* pj;
                 zarray_get_volatile(contour, j, &pj);

@@ -132,10 +132,9 @@ static inline zarray_t *zarray_copy_subset(const zarray_t *za,
  * array, which may be different from its capacity. The index of the last element
  * in the array will be one less than the returned value.
  */
-static inline int zarray_size(const zarray_t *za)
+static inline size_t zarray_size(const zarray_t *za)
 {
     assert(za != NULL);
-
     return za->size;
 }
 
@@ -467,7 +466,7 @@ static inline void zarray_add_all(zarray_t * dest, const zarray_t * source)
     // stack size
     char *tmp = (char*)calloc(1, dest->el_sz);
 
-    for (int i = 0; i < zarray_size(source); i++) {
+    for (size_t i = 0; i < zarray_size(source); i++) {
         zarray_get(source, i, tmp);
         zarray_add(dest, tmp);
    }

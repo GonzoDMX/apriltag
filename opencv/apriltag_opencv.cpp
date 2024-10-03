@@ -106,7 +106,7 @@ void contour_to_points(const zarray_t* cpoints,
 
   points.clear();
 
-  for (int i=0; i<zarray_size(cpoints); ++i) {
+  for (size_t i=0; i < zarray_size(cpoints); ++i) {
     const contour_point_t* p;
     zarray_get_volatile(cpoints, i, &p);
     points.push_back(scale_point(p->x, p->y, upscale));
