@@ -4,6 +4,10 @@
 #include <iostream>
 #include "apriltag_vis.h"
 
+#ifndef CV_AA
+#define CV_AA cv::LINE_AA
+#endif
+
 Mat8uc1 makeImage(const apriltag_detection_t* det) {
 
   image_u8_t* image = apriltag_vis_texture(det);
@@ -130,9 +134,7 @@ void arrow(cv::Mat image,
 
   cv::line(image, a, b, color, 1, CV_AA, shift);
   cv::line(image, b, c, color, 1, CV_AA, shift);
-  cv::line(image, b, d, color, 1, CV_AA, shift);
-  
-  
+  cv::line(image, b, d, color, 1, CV_AA, shift);  
   
 }
 
