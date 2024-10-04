@@ -77,8 +77,8 @@ struct zhash_iterator
     const zhash_t *czh;
 
     // these point to the next bucket/bucket-entry to be examined.
-    int bucket;
-    int idx;
+    size_t bucket;
+    size_t idx;
 };
 
 typedef struct zhash_iterator zhash_iterator_t;

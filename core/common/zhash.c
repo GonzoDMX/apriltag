@@ -45,8 +45,8 @@ either expressed or implied, of the FreeBSD Project.
 
 struct bucket
 {
-    uint32_t size; // # entries in this bucket
-    uint32_t alloc; // # entries allocated
+    size_t size; // # entries in this bucket
+    size_t alloc; // # entries allocated
 
     uint8_t *keys;
     uint8_t *values;
@@ -54,17 +54,18 @@ struct bucket
 
 struct zhash
 {
-    size_t keysz, valuesz;
+    size_t keysz;
+    size_t valuesz;
 
     uint32_t(*hash)(const void *a);
 
     // returns 1 if equal
     int(*equals)(const void *a, const void *b);
 
-    int size; // # of items in hash table
+    size_t size; // # of items in hash table
 
     struct bucket *buckets;
-    int nbuckets;
+    size_t nbuckets;
 };
 
 zhash_t *zhash_create(size_t keysz, size_t valuesz,
@@ -89,7 +90,7 @@ void zhash_destroy(zhash_t *zh)
     if (zh == NULL)
         return;
 
-    for (int i = 0; i < zh->nbuckets; i++) {
+    for (size_t i = 0; i < zh->nbuckets; i++) {
         free(zh->buckets[i].keys);
         free(zh->buckets[i].values);
     }
@@ -137,10 +138,10 @@ int zhash_get(const zhash_t *zh, const void *key, void *out_value)
     assert(key != NULL);
 
     uint32_t hash = zh->hash(key);
-    int idx = hash % zh->nbuckets;
+    size_t idx = hash % zh->nbuckets;
 
     struct bucket *bucket = &zh->buckets[idx];
-    for (int i = 0; i < bucket->size; i++) {
+    for (size_t i = 0; i < bucket->size; i++) {
         void *this_key = &bucket->keys[zh->keysz * i];
 
         if (zh->equals(key, this_key)) {
@@ -160,10 +161,10 @@ int zhash_get_volatile(const zhash_t *zh, const void *key, void *out_value)
     assert(key != NULL);
 
     uint32_t hash = zh->hash(key);
-    int idx = hash % zh->nbuckets;
+    size_t idx = hash % zh->nbuckets;
 
     struct bucket *bucket = &zh->buckets[idx];
-    for (int i = 0; i < bucket->size; i++) {
+    for (size_t i = 0; i < bucket->size; i++) {
         void *this_key = &bucket->keys[zh->keysz * i];
 
         if (zh->equals(key, this_key)) {
@@ -192,7 +193,7 @@ static inline int zhash_put_real(zhash_t *zh, struct bucket *buckets, int nbucke
     struct bucket *bucket = &buckets[idx];
 
     // replace an existing key if it exists.
-    for (int i = 0; i < bucket->size; i++) {
+    for (size_t i = 0; i < bucket->size; i++) {
         void *this_key = &bucket->keys[zh->keysz * i];
         if (zh->equals(key, this_key)) {
             void *this_value = &bucket->values[zh->valuesz * i];
@@ -242,7 +243,7 @@ int zhash_remove(zhash_t *zh, const void *key, void *old_key, void *old_value)
     struct bucket *bucket = &zh->buckets[idx];
 
     // replace an existing key if it exists.
-    for (int i = 0; i < bucket->size; i++) {
+    for (size_t i = 0; i < bucket->size; i++) {
         void *this_key = &bucket->keys[zh->keysz * i];
 
         if (zh->equals(key, this_key)) {
@@ -283,7 +284,7 @@ void zhash_clear(zhash_t *zh) {
         return;
 
     // free current contents
-    for (int i = 0; i < zh->nbuckets; i++) {
+    for (size_t i = 0; i < zh->nbuckets; i++) {
         free(zh->buckets[i].keys);
         free(zh->buckets[i].values);
     }
@@ -304,7 +305,7 @@ int zhash_put(zhash_t *zh, const void *key, const void *value, void *oldkey, voi
     if (zh->nbuckets * REHASH_RATIO < zh->size) {
 
         // resize
-        int new_nbuckets = zh->nbuckets*2;
+        size_t new_nbuckets = zh->nbuckets*2;
         struct bucket *new_buckets = calloc(new_nbuckets, sizeof(struct bucket));
 
         // put all our existing elements into the new hash table
@@ -316,7 +317,7 @@ int zhash_put(zhash_t *zh, const void *key, const void *value, void *oldkey, voi
         }
 
         // free the old elements
-        for (int i = 0; i < zh->nbuckets; i++) {
+        for (size_t i = 0; i < zh->nbuckets; i++) {
             free(zh->buckets[i].keys);
             free(zh->buckets[i].values);
         }

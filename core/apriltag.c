@@ -86,8 +86,8 @@ static uint64_t rotate90(uint64_t w, uint32_t d)
     uint64_t wr = 0;
 
     for (int32_t r = d-1; r >=0; r--) {
-        for (int32_t c = 0; c < d; c++) {
-            int32_t b = r + d*c;
+        for (uint32_t c = 0; c < d; c++) {
+            uint32_t b = r + d*c;
 
             wr = wr << 1;
 
@@ -177,7 +177,7 @@ void quick_decode_init(apriltag_family_t *family, int maxhamming)
     for (int i = 0; i < qd->nentries; i++)
         qd->entries[i].rcode = UINT64_MAX;
 
-    for (int i = 0; i < family->ncodes; i++) {
+    for (size_t i = 0; i < family->ncodes; i++) {
         uint64_t code = family->codes[i];
 
         // add exact code (hamming = 0)
@@ -185,23 +185,29 @@ void quick_decode_init(apriltag_family_t *family, int maxhamming)
 
         if (maxhamming >= 1) {
             // add hamming 1
-            for (int j = 0; j < nbits; j++)
+            for (int j = 0; j < nbits; j++) {
                 quick_decode_add(qd, code ^ (1L << j), i, 1);
+            }
         }
 
         if (maxhamming >= 2) {
             // add hamming 2
-            for (int j = 0; j < nbits; j++)
-                for (int k = 0; k < j; k++)
+            for (int j = 0; j < nbits; j++) {
+                for (int k = 0; k < j; k++) {
                     quick_decode_add(qd, code ^ (1L << j) ^ (1L << k), i, 2);
+                }
+            }
         }
 
         if (maxhamming >= 3) {
             // add hamming 3
-            for (int j = 0; j < nbits; j++)
-                for (int k = 0; k < j; k++)
-                    for (int m = 0; m < k; m++)
+            for (int j = 0; j < nbits; j++) {
+                for (int k = 0; k < j; k++) {
+                    for (int m = 0; m < k; m++) {
                         quick_decode_add(qd, code ^ (1L << j) ^ (1L << k) ^ (1L << m), i, 3);
+                    }
+                }
+            }
         }
 
         if (maxhamming > 3) {
@@ -298,13 +304,14 @@ void apriltag_detector_add_family(apriltag_detector_t *td, apriltag_family_t *fa
     // XXX Tunable, but really, 2 is a good choice. Values of >=3
     // consume prohibitively large amounts of memory, and otherwise
     // you want the largest value possible.
-    if (!fam->impl)
+    if (!fam->impl) {
         quick_decode_init(fam, 2);
+    }
 }
 
 void apriltag_detector_clear_families(apriltag_detector_t *td)
 {
-    for (int i = 0; i < zarray_size(td->tag_families); i++) {
+    for (size_t i = 0; i < zarray_size(td->tag_families); i++) {
         apriltag_family_t *fam;
         zarray_get(td->tag_families, i, &fam);
         quick_decode_uninit(fam);
@@ -414,10 +421,12 @@ void quad_update_homographies(struct quad *quad)
         zarray_add(correspondences, &corr);
     }
 
-    if (quad->H)
+    if (quad->H) {
         matd_destroy(quad->H);
-    if (quad->Hinv)
+    }
+    if (quad->Hinv) {
         matd_destroy(quad->Hinv);
+    }
 
     // XXX Tunable
     quad->H = homography_compute(correspondences, HOMOGRAPHY_COMPUTE_FLAG_SVD);
@@ -505,8 +514,9 @@ double quad_goodness(apriltag_family_t *family, image_u8_t *im, struct quad *qua
             float xymax = fmaxf(txa, tya);
 
 //            if (txa >= 1 + wsz || tya >= 1 + wsz)
-            if (xymax >= 1 + wsz)
+            if (xymax >= 1 + wsz) {
                 continue;
+            }
 
             uint8_t v = im->buf[y*im->stride + x];
 
@@ -599,12 +609,12 @@ float quad_decode(apriltag_family_t *family, image_u8_t *im, struct quad *quad, 
     float sums[2] = { 0, 0 };
     float counts[2] = { 0, 0 };
 
-    for (int pattern_idx = 0; pattern_idx < sizeof(patterns)/(5*sizeof(float)); pattern_idx ++) {
+    for (size_t pattern_idx = 0; pattern_idx < sizeof(patterns)/(5*sizeof(float)); pattern_idx ++) {
         float *pattern = &patterns[pattern_idx * 5];
 
         int sumidx = pattern[4];
 
-        for (int i = 0; i < 2*family->black_border + family->d; i++) {
+        for (int i = 0; i < (int)(2*family->black_border + family->d); i++) {
             double tagx01 = (pattern[0] + i*pattern[2]) / (2*family->black_border + family->d);
             double tagy01 = (pattern[1] + i*pattern[3]) / (2*family->black_border + family->d);
 
@@ -617,8 +627,9 @@ float quad_decode(apriltag_family_t *family, image_u8_t *im, struct quad *quad, 
             // don't round
             int ix = px;
             int iy = py;
-            if (ix < 0 || iy < 0 || ix >= im->width || iy >= im->height)
+            if (ix < 0 || iy < 0 || ix >= im->width || iy >= im->height) {
                 continue;
+            }
 
             int v = im->buf[iy*im->stride + ix];
 
@@ -634,7 +645,7 @@ float quad_decode(apriltag_family_t *family, image_u8_t *im, struct quad *quad, 
     float score = 0;
     float score_count = 0;
 
-    for (int bitidx = 0; bitidx < family->d * family->d; bitidx++) {
+    for (int bitidx = 0; bitidx < (int)(family->d * family->d); bitidx++) {
         int bitx = bitidx % family->d;
         int bity = bitidx / family->d;
 
@@ -654,8 +665,9 @@ float quad_decode(apriltag_family_t *family, image_u8_t *im, struct quad *quad, 
         int ix = px;
         int iy = py;
 
-        if (ix < 0 || iy < 0 || ix >= im->width || iy >= im->height)
+        if (ix < 0 || iy < 0 || ix >= im->width || iy >= im->height) {
             continue;
+        }
 
         int v = im->buf[iy*im->stride + ix];
 
@@ -725,8 +737,9 @@ double optimize_quad_generic(apriltag_family_t *family, image_u8_t *im, struct q
 
                 for (int sx = -nsteps; sx <= nsteps; sx++) {
                     for (int sy = -nsteps; sy <= nsteps; sy++) {
-                        if (sx==0 && sy==0)
+                        if (sx==0 && sy==0) {
                             continue;
+                        }
 
                         struct quad *this_quad = quad_copy(best_quad);
                         this_quad->p[i][0] = best_quad->p[i][0] + sx*stepsize;
@@ -822,19 +835,22 @@ static void refine_edges(apriltag_detector_t *td, image_u8_t *im_orig, struct qu
                 double grange = 1;
                 int x1 = x0 + (n + grange)*nx;
                 int y1 = y0 + (n + grange)*ny;
-                if (x1 < 0 || x1 >= im_orig->width || y1 < 0 || y1 >= im_orig->height)
+                if (x1 < 0 || x1 >= im_orig->width || y1 < 0 || y1 >= im_orig->height) {
                     continue;
+                }
 
                 int x2 = x0 + (n - grange)*nx;
                 int y2 = y0 + (n - grange)*ny;
-                if (x2 < 0 || x2 >= im_orig->width || y2 < 0 || y2 >= im_orig->height)
+                if (x2 < 0 || x2 >= im_orig->width || y2 < 0 || y2 >= im_orig->height) {
                     continue;
+                }
 
                 int g1 = im_orig->buf[y1*im_orig->stride + x1];
                 int g2 = im_orig->buf[y2*im_orig->stride + x2];
 
-                if (g1 < g2) // reject points whose gradient is "backwards". They can only hurt us.
+                if (g1 < g2) { // reject points whose gradient is "backwards". They can only hurt us.
                     continue;
+                }
 
                 double weight = (g2 - g1)*(g2 - g1); // XXX tunable. What shape for weight=f(g2-g1)?
 
@@ -916,7 +932,7 @@ static void quad_decode_task(void *_u)
         // make sure the homographies are computed...
         quad_update_homographies(quad_original);
 
-        for (int famidx = 0; famidx < zarray_size(td->tag_families); famidx++) {
+        for (size_t famidx = 0; famidx < zarray_size(td->tag_families); famidx++) {
             apriltag_family_t *family;
             zarray_get(td->tag_families, famidx, &family);
 
@@ -1006,8 +1022,9 @@ static void quad_decode_task(void *_u)
 
 void apriltag_detection_destroy(apriltag_detection_t *det)
 {
-    if (det == NULL)
+    if (det == NULL) {
         return;
+    }
 
     matd_destroy(det->H);
     free(det);
@@ -1052,8 +1069,9 @@ zarray_t *apriltag_detector_detect(apriltag_detector_t *td, image_u8_t *im_orig)
         float sigma = fabsf((float) td->quad_sigma);
 
         int ksz = 4 * sigma; // 2 std devs in each direction
-        if ((ksz & 1) == 0)
+        if ((ksz & 1) == 0) {
             ksz++;
+        }
 
         if (ksz > 1) {
 
@@ -1071,10 +1089,12 @@ zarray_t *apriltag_detector_detect(apriltag_detector_t *td, image_u8_t *im_orig)
                         int vblur = quad_im->buf[y*quad_im->stride + x];
 
                         int v = 2*vorig - vblur;
-                        if (v < 0)
+                        if (v < 0) {
                             v = 0;
-                        if (v > 255)
+                        }
+                        if (v > 255) {
                             v = 255;
+                        }
 
                         quad_im->buf[y*quad_im->stride + x] = (uint8_t) v;
                     }
@@ -1086,8 +1106,9 @@ zarray_t *apriltag_detector_detect(apriltag_detector_t *td, image_u8_t *im_orig)
 
     timeprofile_stamp(td->tp, "blur/sharp");
 
-    if (td->debug)
+    if (td->debug) {
         image_u8_write_pnm(quad_im, "debug_preprocess.pnm");
+    }
 
     zarray_t* quads = 0;
 
@@ -1101,19 +1122,20 @@ zarray_t *apriltag_detector_detect(apriltag_detector_t *td, image_u8_t *im_orig)
     // adjust centers of pixels so that they correspond to the
     // original full-resolution image.
     if (td->quad_decimate > 1) {
-        for (int i = 0; i < zarray_size(quads); i++) {
+        for (size_t i = 0; i < zarray_size(quads); i++) {
             struct quad *q;
             zarray_get_volatile(quads, i, &q);
 
-            for (int i = 0; i < 4; i++) {
-                q->p[i][0] *= td->quad_decimate;
-                q->p[i][1] *= td->quad_decimate;
+            for (int j = 0; j < 4; j++) {
+                q->p[j][0] *= td->quad_decimate;
+                q->p[j][1] *= td->quad_decimate;
             }
         }
     }
 
-    if (quad_im != im_orig)
+    if (quad_im != im_orig) {
         image_u8_destroy(quad_im);
+    }
 
     zarray_t *detections = zarray_create(sizeof(apriltag_detection_t*));
 
@@ -1128,7 +1150,7 @@ zarray_t *apriltag_detector_detect(apriltag_detector_t *td, image_u8_t *im_orig)
 
         srandom(0);
 
-        for (int i = 0; i < zarray_size(quads); i++) {
+        for (size_t i = 0; i < zarray_size(quads); i++) {
             struct quad *quad;
             zarray_get_volatile(quads, i, &quad);
 
@@ -1158,7 +1180,7 @@ zarray_t *apriltag_detector_detect(apriltag_detector_t *td, image_u8_t *im_orig)
         struct quad_decode_task tasks[zarray_size(quads) / chunksize + 1];
 
         int ntasks = 0;
-        for (int i = 0; i < zarray_size(quads); i+= chunksize) {
+        for (size_t i = 0; i < zarray_size(quads); i+= chunksize) {
             tasks[ntasks].i0 = i;
             tasks[ntasks].i1 = imin(zarray_size(quads), i + chunksize);
             tasks[ntasks].quads = quads;
@@ -1193,7 +1215,7 @@ zarray_t *apriltag_detector_detect(apriltag_detector_t *td, image_u8_t *im_orig)
 
         srandom(0);
 
-        for (int i = 0; i < zarray_size(quads); i++) {
+        for (size_t i = 0; i < zarray_size(quads); i++) {
             struct quad *quad;
             zarray_get_volatile(quads, i, &quad);
 
@@ -1220,24 +1242,27 @@ zarray_t *apriltag_detector_detect(apriltag_detector_t *td, image_u8_t *im_orig)
         zarray_t *poly0 = g2d_polygon_create_zeros(4);
         zarray_t *poly1 = g2d_polygon_create_zeros(4);
 
-        for (int i0 = 0; i0 < zarray_size(detections); i0++) {
+        for (size_t i0 = 0; i0 < zarray_size(detections); i0++) {
 
             apriltag_detection_t *det0;
             zarray_get(detections, i0, &det0);
 
-            for (int k = 0; k < 4; k++)
-                zarray_set(poly0, k, det0->p[k], NULL);
+            for (int j = 0; j < 4; j++) {
+                zarray_set(poly0, j, det0->p[j], NULL);
+            }
 
-            for (int i1 = i0+1; i1 < zarray_size(detections); i1++) {
+            for (size_t i1 = i0+1; i1 < zarray_size(detections); i1++) {
 
                 apriltag_detection_t *det1;
                 zarray_get(detections, i1, &det1);
 
-                if (det0->id != det1->id || det0->family != det1->family)
+                if (det0->id != det1->id || det0->family != det1->family) {
                     continue;
+                }
 
-                for (int k = 0; k < 4; k++)
+                for (int k = 0; k < 4; k++) {
                     zarray_set(poly1, k, det1->p[k], NULL);
+                }
 
                 if (g2d_polygon_overlaps_polygon(poly0, poly1)) {
                     // the tags overlap. Delete one, keep the other.
@@ -1288,12 +1313,13 @@ zarray_t *apriltag_detector_detect(apriltag_detector_t *td, image_u8_t *im_orig)
         postscript_image(f, darker);
 
         image_u32_t *out = image_u32_create_from_u8(darker);
-        for (int detidx = 0; detidx < zarray_size(detections); detidx++) {
+        for (size_t detidx = 0; detidx < zarray_size(detections); detidx++) {
             apriltag_detection_t *det;
             zarray_get(detections, detidx, &det);
 
-            if (det->hamming > 3)
+            if (det->hamming > 3) {
                 continue;
+            }
 
             // d |----| c
             //   |    |
@@ -1345,15 +1371,16 @@ zarray_t *apriltag_detector_detect(apriltag_detector_t *td, image_u8_t *im_orig)
 
         postscript_image(f, im);
 
-        for (int i = 0; i < zarray_size(quads); i++) {
+        for (size_t i = 0; i < zarray_size(quads); i++) {
             struct quad *q;
             zarray_get_volatile(quads, i, &q);
 
             float rgb[3];
             int bias = 100;
 
-            for (int i = 0; i < 3; i++)
+            for (int i = 0; i < 3; i++) {
                 rgb[i] = bias + (random() % (255-bias));
+            }
 
             fprintf(f, "%f %f %f setrgbcolor\n", rgb[0]/255.0f, rgb[1]/255.0f, rgb[2]/255.0f);
             fprintf(f, "%f %f moveto %f %f lineto %f %f lineto %f %f lineto %f %f lineto stroke\n",
@@ -1369,7 +1396,7 @@ zarray_t *apriltag_detector_detect(apriltag_detector_t *td, image_u8_t *im_orig)
 
     timeprofile_stamp(td->tp, "debug output");
 
-    for (int i = 0; i < zarray_size(quads); i++) {
+    for (size_t i = 0; i < zarray_size(quads); i++) {
         struct quad *quad;
         zarray_get_volatile(quads, i, &quad);
         matd_destroy(quad->H);
@@ -1388,7 +1415,7 @@ zarray_t *apriltag_detector_detect(apriltag_detector_t *td, image_u8_t *im_orig)
 // Call this method on each of the tags returned by apriltag_detector_detect
 void apriltag_detections_destroy(zarray_t *detections)
 {
-    for (int i = 0; i < zarray_size(detections); i++) {
+    for (size_t i = 0; i < zarray_size(detections); i++) {
         apriltag_detection_t *det;
         zarray_get(detections, i, &det);
 
